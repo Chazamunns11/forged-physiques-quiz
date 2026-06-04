@@ -2,47 +2,72 @@
 
 A single-file, self-contained lead-gen quiz funnel. Black / white / lime (#7DD957) to match the Forged Physiques deck. Mobile-first.
 
+**It does this:** 15 questions → personalised "Transformation Readiness" score → the client's **#1 blocker** → the matched lead magnet to grab → their **full report emailed** to them → **book-a-call** CTA to remove every blocker.
+
 ## The file
-- **`index.html`** — the finished quiz. This is the only file you upload/host. Everything (logo, transformation photos, fonts trigger, code) is embedded — no broken links, works offline once loaded.
-- `quiz_template.html` — build source (has `__TOKEN__` placeholders for the embedded images). Only needed if the images ever change. Ignore it for normal edits.
+- **`index.html`** — the finished quiz. The only file you upload/host. Logo, transformation photos and code are all embedded — no broken links.
+- `quiz_template.html` — build source (has `__TOKEN__` placeholders for the embedded images). Only needed if the images change. Ignore for normal edits.
 
 ## How to use it
-Upload `index.html` anywhere — GoHighLevel (custom code / page), a static host, or open it locally to demo. That's it.
+Upload `index.html` anywhere — GoHighLevel (custom code / page), a static host, or open it locally to demo.
 
-## The 3 things to swap (top of the file)
-Open `index.html`, find the **`CONFIG`** block near the bottom (`<script>` section). Three things to change:
+## What to swap (the `CONFIG` block, top of the `<script>`)
 
-1. **Lead magnet links** — replace each `'#'` with the real download / landing-page URL:
-   ```js
-   leadMagnets: {
-     sleep:      { title: 'The Recovery & Sleep Protocol',    url: '#' },  // ← your link
-     habits:     { title: 'The Consistency Blueprint',        url: '#' },  // ← your link
-     foundation: { title: 'The Foundation Phase Starter',     url: '#' },  // ← your link
-     training:   { title: 'The Training & Execution Playbook', url: '#' }  // ← your link
-   }
-   ```
-   (Titles are editable too if your guides are named differently.)
+### 1. Lead magnets — replace each `'#'` with the real link
+One bucket per PDF. `cta` = button verb, `kicker` = small label.
+```js
+leadMagnets: {
+  sleep:      { title: 'The Sleep Lead Magnet',     url: '#', cta: 'Download', kicker: 'Free Guide'   },
+  morning:    { title: 'The Morning Routine Guide', url: '#', cta: 'Download', kicker: 'Free Guide'   },
+  habits:     { title: 'The Habit & Routine Guide', url: '#', cta: 'Download', kicker: 'Free Guide'   },
+  foundation: { title: 'The Foundation Phase PDF',  url: '#', cta: 'Download', kicker: 'Free Guide'   },
+  training:   { title: 'The Training Webinar',      url: '#', cta: 'Watch',    kicker: 'Free Webinar' }
+}
+```
+Titles are editable — rename to match your real PDFs/webinar.
 
-2. **Booking link** — the soft "book a call" nudge at the end:
-   ```js
-   bookingUrl: 'https://REPLACE-WITH-YOUR-BOOKING-LINK',
-   ```
+### 2. Booking link
+```js
+bookingUrl: 'https://REPLACE-WITH-YOUR-BOOKING-LINK',
+```
 
-3. **Lead capture** — currently **capture-only**. Every submission is saved in the browser (`localStorage` key `fp_quiz_leads`) and logged to the console, so you can test immediately. When you're ready to push leads into GHL/Zapier, paste a webhook URL:
-   ```js
-   leadWebhookUrl: '',   // ← paste your GHL / Zapier / Make webhook here
-   ```
-   Once set, each lead POSTs as JSON automatically (name, mobile, email, Instagram + their score, blocker and full answers).
+### 3. Email the personalised report — pick ONE option
 
-## How the result works
-- 12 questions, 3 per category: **Sleep & Recovery · Consistency & Habits · Foundation Phase · Training & Execution**.
-- Each answer scores 0–3 "health" points. Each category gets a %.
-- **Overall "Transformation Readiness %"** = average of the four.
-- **#1 blocker** = the lowest-scoring category → that category's lead magnet becomes the headline download. The other three are offered as a "toolkit".
+**Option A — GoHighLevel / Zapier (recommended for your stack).** Paste your webhook:
+```js
+leadWebhookUrl: 'https://your-ghl-or-zapier-webhook',
+```
+Every submission POSTs the full result as JSON. Build a GHL/Zapier workflow that emails the client using these fields:
 
-## Testing leads now
-Open the page, complete the quiz, then in the browser console:
+| Field | Example |
+|---|---|
+| `firstName`, `lastName`, `email`, `mobile`, `instagram` | contact details |
+| `readinessScore` | `62` |
+| `verdict` | `So Close` |
+| `primaryBlocker` / `blockerLabel` | `sleep` / `Sleep` |
+| `blockerDescription` | the diagnostic paragraph |
+| `matchedResource.title` / `.url` / `.cta` | the lead magnet to send them |
+| `categoryScores` | `{sleep, morning, habits, foundation, training}` |
+| `answers` | every question + their choice |
+
+**Option B — EmailJS (no CRM needed, sends straight from the page).** Free at [emailjs.com](https://www.emailjs.com): create a service + an email template, then paste your keys:
+```js
+emailjs: { publicKey: 'xxx', serviceId: 'service_xxx', templateId: 'template_xxx' },
+```
+In your EmailJS template, set **To = `{{email}}`** and use merge fields:
+`{{first_name}}`, `{{readiness_score}}`, `{{verdict}}`, `{{blocker}}`, `{{blocker_description}}`, `{{resource_title}}`, `{{resource_url}}`, `{{score_sleep}}`, `{{score_morning}}`, `{{score_habits}}`, `{{score_foundation}}`, `{{score_training}}`, `{{booking_url}}`.
+
+> Until A or B is configured, leads are still captured (browser `localStorage` + console) so you can test — the on-page "we've emailed your report" line only appears once an email method is live.
+
+## How the score works
+- **5 buckets, 3 questions each (15 total):** Sleep · Morning Routine · Habits & Routine · Foundation Phase · Training.
+- Each answer scores 0–3. Each bucket → a %.
+- **Transformation Readiness %** = average of the five.
+- **#1 blocker** = the lowest-scoring bucket → its lead magnet becomes the headline CTA; the other four are offered as a toolkit.
+
+## Test it now
+Complete the quiz, then in the browser console:
 ```js
 JSON.parse(localStorage.getItem('fp_quiz_leads'))
 ```
-…to see everything captured.
+…to see the full captured result.
